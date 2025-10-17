@@ -5,6 +5,9 @@ from django.core.validators import validate_email, RegexValidator
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from decimal import Decimal
+from graphene_django.filter import DjangoFilterConnectionField
+from .filters import CustomerFilter, ProductFilter, OrderFilter
+
 
 from .models import Customer, Product, Order
 
@@ -264,32 +267,25 @@ class Mutation(graphene.ObjectType):
 
 # -------------------- QUERIES --------------------
 class Query(graphene.ObjectType):
-    all_customers = graphene.List(CustomerType)
+    # Filterable connections
+    all_customers = DjangoFilterConnectionField(CustomerType, filterset_class=CustomerFilter, order_by=graphene.String())
+    all_products = DjangoFilterConnectionField(ProductType, filterset_class=ProductFilter, order_by=graphene.String())
+    all_orders = DjangoFilterConnectionField(OrderType, filterset_class=OrderFilter, order_by=graphene.String())
+
+    # Single item resolvers
     customer = graphene.Field(CustomerType, id=graphene.ID(required=True))
-
-    all_products = graphene.List(ProductType)
     product = graphene.Field(ProductType, id=graphene.ID(required=True))
-
-    all_orders = graphene.List(OrderType)
     order = graphene.Field(OrderType, id=graphene.ID(required=True))
-
-    def resolve_all_customers(root, info):
-        return Customer.objects.all()
 
     def resolve_customer(root, info, id):
         return Customer.objects.get(pk=id)
 
-    def resolve_all_products(root, info):
-        return Product.objects.all()
-
     def resolve_product(root, info, id):
         return Product.objects.get(pk=id)
 
-    def resolve_all_orders(root, info):
-        return Order.objects.select_related('customer').prefetch_related('products').all()
-
     def resolve_order(root, info, id):
         return Order.objects.get(pk=id)
+
 
 
 # -------------------- EXPORT SCHEMA --------------------

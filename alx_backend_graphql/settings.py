@@ -42,7 +42,7 @@ INSTALLED_APPS = [
 ]
 
 GRAPHENE = {
-    'SCHEMA': 'myapp.schema.schema'
+    'SCHEMA': 'alx_backend_graphql.schema.schema'
 }
 
 

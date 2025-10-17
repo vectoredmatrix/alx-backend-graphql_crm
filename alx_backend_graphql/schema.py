@@ -3,7 +3,7 @@ from graphene_django import DjangoObjectType
 
 
 
-#Class Query(CRMQuery , graphene.ObjectType)
+# class Query(CRMQuery , graphene.ObjectType)
 
 class Query(graphene.ObjectType):
     pass

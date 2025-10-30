@@ -47,10 +47,11 @@ GRAPHENE = {
     'SCHEMA': 'alx_backend_graphql.schema.schema'
 }
 
-
 CRONJOBS = [
-    ('*/5 * * * *', 'crm.cron.log_crm_heartbeat'),
+    ('*/5 * * * *', 'crm.cron.log_crm_heartbeat'),  # if you already have this
+    ('0 */12 * * *', 'crm.cron.update_low_stock'),   # ✅ every 12 hours
 ]
+
 
 
 MIDDLEWARE = [

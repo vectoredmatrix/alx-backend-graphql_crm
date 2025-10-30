@@ -2,17 +2,16 @@ from datetime import datetime
 from gql import gql, Client
 from gql.transport.requests import RequestsHTTPTransport
 
-def log_crm_heartbeat():
+def update_low_stock():
     """
-    Logs a heartbeat message every 5 minutes to verify CRM health.
-    Optionally queries the GraphQL 'hello' field to confirm responsiveness.
+    Cron job that calls the GraphQL mutation to restock low-stock products
+    and logs the updates.
     """
     timestamp = datetime.now().strftime("%d/%m/%Y-%H:%M:%S")
-    message = f"{timestamp} CRM is alive"
-    log_file = "/tmp/crm_heartbeat_log.txt"
+    log_file = "/tmp/low_stock_updates_log.txt"
 
-    # Optional GraphQL endpoint health check using gql
     try:
+        # Set up GraphQL client
         transport = RequestsHTTPTransport(
             url="http://localhost:8000/graphql",
             verify=True,
@@ -20,16 +19,30 @@ def log_crm_heartbeat():
         )
         client = Client(transport=transport, fetch_schema_from_transport=False)
 
-        # Query a simple field like `hello` to test the GraphQL endpoint
-        query = gql("{ hello }")
-        result = client.execute(query)
-        hello_response = result.get("hello", "No response")
+        # Mutation to update low-stock products
+        mutation = gql("""
+        mutation {
+          updateLowStockProducts {
+            message
+            updatedProducts {
+              name
+              stock
+            }
+          }
+        }
+        """)
 
-        message += f" - GraphQL OK ({hello_response})"
+        result = client.execute(mutation)
+        data = result.get("updateLowStockProducts", {})
+        message = data.get("message", "No message")
+        products = data.get("updatedProducts", [])
+
+        # Log results
+        with open(log_file, "a") as f:
+            f.write(f"[{timestamp}] {message}\n")
+            for p in products:
+                f.write(f"    - {p['name']}: stock now {p['stock']}\n")
 
     except Exception as e:
-        message += f" - GraphQL Error ({e})"
-
-    # Append heartbeat log
-    with open(log_file, "a") as f:
-        f.write(message + "\n")
+        with open(log_file, "a") as f:
+            f.write(f"[{timestamp}] Error updating low-stock products: {e}\n")

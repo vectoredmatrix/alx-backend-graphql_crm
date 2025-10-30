@@ -1,27 +1,30 @@
 #!/usr/bin/env python3
 """
 send_order_reminders.py
-Queries GraphQL API for orders within the last 7 days and logs reminders.
+Uses gql to query recent orders and logs reminders.
 """
 
-import requests
-import datetime
-from datetime import timedelta
+from gql import gql, Client
+from gql.transport.requests import RequestsHTTPTransport
+from datetime import datetime, timedelta
 
 # GraphQL endpoint
 GRAPHQL_URL = "http://localhost:8000/graphql"
 
-# Log file path
+# Log file
 LOG_FILE = "/tmp/order_reminders_log.txt"
 
-# Calculate date range (last 7 days)
-now = datetime.datetime.utcnow()
-week_ago = now - timedelta(days=7)
+# Create GraphQL client
+transport = RequestsHTTPTransport(url=GRAPHQL_URL, verify=True, retries=3)
+client = Client(transport=transport, fetch_schema_from_transport=False)
+
+# Compute last 7 days
+week_ago = datetime.utcnow() - timedelta(days=7)
 
 # GraphQL query
-query = """
+query = gql("""
 query RecentOrders($startDate: DateTime!) {
-  allOrders(orderBy: "-order_date", order_Date_Gte: $startDate) {
+  allOrders(order_Date_Gte: $startDate, orderBy: "-order_date") {
     edges {
       node {
         id
@@ -33,19 +36,14 @@ query RecentOrders($startDate: DateTime!) {
     }
   }
 }
-"""
+""")
 
-# Prepare payload
 variables = {"startDate": week_ago.isoformat()}
+timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 try:
-    response = requests.post(GRAPHQL_URL, json={"query": query, "variables": variables})
-    response.raise_for_status()
-    data = response.json()
-
-    # Extract orders
-    orders = data.get("data", {}).get("allOrders", {}).get("edges", [])
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    result = client.execute(query, variable_values=variables)
+    orders = result.get("allOrders", {}).get("edges", [])
 
     with open(LOG_FILE, "a") as f:
         for order in orders:

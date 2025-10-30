@@ -285,6 +285,13 @@ class Query(graphene.ObjectType):
 
     def resolve_order(root, info, id):
         return Order.objects.get(pk=id)
+    
+    def resolve_all_customers(root, info, order_by=None, **kwargs):
+        qs = Customer.objects.all()
+        if order_by:
+            qs = qs.order_by(order_by)
+        return qs
+
 
 
 

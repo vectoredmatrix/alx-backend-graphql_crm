@@ -267,6 +267,7 @@ class Mutation(graphene.ObjectType):
 
 # -------------------- QUERIES --------------------
 class Query(graphene.ObjectType):
+    hello = graphene.String(default_value="Hello from CRM!")
     # Filterable connections
     all_customers = DjangoFilterConnectionField(CustomerType, filterset_class=CustomerFilter, order_by=graphene.String())
     all_products = DjangoFilterConnectionField(ProductType, filterset_class=ProductFilter, order_by=graphene.String())
